@@ -1,0 +1,164 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom global styles for glassmorphism UI */
+html, body, #__next {
+  height: 100%;
+}
+body {
+  @apply bg-gradient-to-br from-gray-900 via-neutral-900 to-gray-800 text-gray-200;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+/* Glass card */
+.glass {
+  background: rgba(30,41,59,0.55);
+  border: 1px solid rgba(255,255,255,0.06);
+  backdrop-filter: blur(6px) saturate(120%);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+}
+
+/* Scrollbar for the long instruction box */
+.instructions::-webkit-scrollbar { height: 8px; width: 8px; }
+.instructions::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 999px; }
+.instructions::-webkit-scrollbar-track { background: transparent; }
+
+/* Small pill buttons */
+.pill {
+  @apply px-4 py-2 rounded-full text-sm font-medium shadow-sm;
+}
+
+/* ---------- Focused 3D pop-out for hovered thumbnail + sibling dimming ---------- */
+
+/* outer container: gives perspective for inner pop */
+.gallery-item {
+  position: relative;
+  perspective: 1400px;
+  -webkit-perspective: 1400px;
+  transform-style: preserve-3d;
+  transition: transform 300ms cubic-bezier(.2,.9,.2,1), box-shadow 300ms cubic-bezier(.2,.9,.2,1);
+  will-change: transform, box-shadow;
+  z-index: 0;
+  border-radius: 1rem;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.55);
+  background-clip: padding-box;
+  overflow: visible; /* allow popped element to exceed bounds */
+}
+
+/* the moving layer that will be translated into view */
+.gallery-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  transition: transform 420ms cubic-bezier(.22,1,.36,1), box-shadow 420ms cubic-bezier(.22,1,.36,1);
+  transform-style: preserve-3d;
+  z-index: 1;
+  overflow: hidden;
+  backface-visibility: hidden;
+}
+
+/* image base styling */
+.gallery-inner img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transform-origin: center center;
+  transition: transform 420ms cubic-bezier(.22,1,.36,1), filter 260ms ease;
+  backface-visibility: hidden;
+}
+
+/* overlay tint for hovered item (kept on outer element) */
+.gallery-item::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(30,58,138,0.60), rgba(37,99,235,0.70));
+  opacity: 0;
+  transition: opacity 220ms ease, transform 320ms cubic-bezier(.2,.9,.2,1);
+  mix-blend-mode: overlay;
+  z-index: 2;
+}
+
+/* container hover: small lift & stronger glow (prepares stacking) */
+.gallery-item:hover,
+.gallery-item:focus {
+  z-index: 60;
+  transform: translateY(-6px);
+  box-shadow:
+    0 36px 60px rgba(0,0,0,0.72),
+    0 8px 40px rgba(37,99,235,0.28);
+}
+
+/* show overlay for hovered item */
+.gallery-item:hover::after,
+.gallery-item:focus::after {
+  opacity: 1;
+  transform: translateY(-6px);
+}
+
+/* THE POP: move the inner layer forward in Z-space for real pop-out and tilt a little */
+.gallery-item:hover .gallery-inner,
+.gallery-item:focus .gallery-inner {
+  transform: translateZ(140px) translateY(-18px) rotateY(-5deg) scale(1.12);
+  box-shadow:
+    0 48px 90px rgba(0,0,0,0.78),
+    0 16px 60px rgba(37,99,235,0.44);
+}
+
+/* image zoom for more depth */
+.gallery-item:hover .gallery-inner img,
+.gallery-item:focus .gallery-inner img {
+  transform: translateZ(24px) scale(1.16) rotateY(-4deg);
+  filter: brightness(1.08) saturate(1.18);
+}
+
+/* DIM non-hovered siblings while hovering anywhere inside the grid */
+/* When user hovers the grid, any gallery-item that is NOT hovered will be desaturated/dim */
+.gallery-grid:hover .gallery-item:not(:hover) .gallery-inner img {
+  filter: grayscale(1) brightness(0.72) saturate(0.6);
+  transform: none; /* keep non-hovered items static */
+  transition: filter 240ms ease, transform 240ms ease;
+  opacity: 0.95;
+  /* optional slight scale down to emphasize center pop */
+  transform-origin: center center;
+  transform: scale(0.98);
+}
+
+/* Also slightly fade non-hovered overlay presence (ensure overlay not visible) */
+.gallery-grid:hover .gallery-item:not(:hover)::after {
+  opacity: 0; 
+}
+
+/* focus accessibility: keyboard focus should also trigger pop */
+.gallery-item:focus {
+  outline: none;
+  box-shadow:
+    0 36px 70px rgba(0,0,0,0.78),
+    0 12px 50px rgba(37,99,235,0.36);
+}
+
+/* smaller screens: tone down transforms for usability */
+@media (max-width: 640px) {
+  .gallery-item {
+    perspective: none;
+  }
+  .gallery-item:hover,
+  .gallery-item:focus {
+    transform: none;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.5);
+  }
+  .gallery-item:hover .gallery-inner,
+  .gallery-item:focus .gallery-inner {
+    transform: scale(1.03);
+  }
+  .gallery-grid:hover .gallery-item:not(:hover) .gallery-inner img {
+    filter: none;
+    transform: none;
+  }
+}
